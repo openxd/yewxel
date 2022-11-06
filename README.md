@@ -8,12 +8,12 @@ engines.
 ## Progress
 
 * [x] Compiled time CSS Loading for only activated features
-* [-] Implemented All Elements
+* [ ] Implemented All Elements (In Progress)
   + [ ] `x-accordion`
   + [ ] `x-backdrop`
   + [ ] `x-barscolorpicker`
   + [ ] `x-box`
-  + [-] `x-button`
+  + [ ] `x-button` (In Progress)
   + [ ] `x-buttons`
   + [ ] `x-card`
   + [ ] `x-checkbox`
