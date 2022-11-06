@@ -7,6 +7,7 @@ description = "Xel toolkit elements"
 [dependencies]
 yew = "0.19"
 web-sys = {version =  "*", features = ["Document", "Window", "HtmlCollection", "MediaQueryList"]}
+js-sys = "*"
 
 [build-dependencies]
 lightningcss = {git="https://github.com/openxd/lightningcss.git"}
@@ -22,6 +23,7 @@ theme-cupertino = []
 mode-dark = []
 mode-light = []
 # Supported Elements
+element-x-label = []
 element-x-button = []
 element-x-buttons = []
 element-x-menubar = []

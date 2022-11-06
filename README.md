@@ -21,7 +21,7 @@ engines.
   + [ ] `x-contextmenu`
   + [ ] `x-icon`
   + [ ] `x-input`
-  + [ ] `x-label`
+  + [x] `x-label`
   + [ ] `x-menu`
   + [ ] `x-menubar`
   + [ ] `x-menuitem`

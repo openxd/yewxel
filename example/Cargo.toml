@@ -7,4 +7,10 @@ edition = "2021"
 
 [dependencies]
 "yew" = "0.19"
-yewxel = {path="../", features = ["mode-dark","mode-light","theme-cupertino","element-x-button"]}
+yewxel = { path = "../", features = [
+  "mode-dark",
+  "mode-light",
+  "theme-cupertino",
+  "element-x-button",
+  "element-x-label",
+] }

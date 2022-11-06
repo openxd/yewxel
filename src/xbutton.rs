@@ -1,8 +1,9 @@
 use std::fmt::Write;
+use yew::Callback;
 use yew::{html, Children, Component, Properties};
 
 use crate::calculate_computed_style;
-use crate::ComputedSize;
+use crate::xcontainer::XContainerContext;
 use crate::XComponentSize;
 
 #[derive(PartialEq, Clone)]
@@ -108,8 +109,12 @@ impl Component for XButton {
             write!(classes, " size-{}", size.to_string()).unwrap();
         }
 
-        // TODO: Get the default size from context
-        let computed_size = calculate_computed_style(props.size.clone(), ComputedSize::Medium);
+        let default_size = ctx
+            .link()
+            .context::<XContainerContext>(Callback::noop())
+            .expect("XContainer should be the root.");
+        let computed_size =
+            calculate_computed_style(props.size.clone(), default_size.0.size.clone());
         write!(classes, " computedsize-{}", computed_size.to_string()).unwrap();
 
         html! {

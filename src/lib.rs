@@ -1,8 +1,10 @@
 #[cfg(feature="element-x-button")]
 pub mod xbutton;
 pub mod xcontainer;
+#[cfg(feature="element-x-label")]
+pub mod xlabel;
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum ComputedSize {
     Small,
     Medium,
@@ -63,4 +65,8 @@ pub(crate) fn calculate_computed_style(opt_custom_size: Option<XComponentSize>, 
         },
         None => default_size
     }
+}
+
+pub(crate) fn console_log(message: String) {
+    web_sys::console::log_1(&js_sys::JsString::from(message));
 }

@@ -1,7 +1,9 @@
 use std::sync::Once;
 
 use web_sys::{window, Document, Window};
-use yew::{html, Children, Component, Properties};
+use yew::{html, Children, Component, Properties, ContextProvider};
+
+use crate::ComputedSize;
 
 static BASE_CSS: &'static str = include_str!(concat!(env!("OUT_DIR"), "/base.css"));
 
@@ -12,11 +14,15 @@ static DARK_CSS: &'static str = include_str!(concat!(env!("OUT_DIR"), "/dark.css
 
 static LOADED: Once = Once::new();
 
+/// User preferred color mode
 #[cfg(all(feature = "mode-light", feature = "mode-dark"))]
 #[derive(Clone, PartialEq)]
 pub enum Mode {
+    /// Light color
     Light,
+    /// Dark colors
     Dark,
+    /// Based on browser settings
     Auto,
 }
 
@@ -34,7 +40,15 @@ pub struct XContainerProps {
     pub mode: Mode,
 
     #[prop_or_default]
+    pub size: ComputedSize,
+
+    #[prop_or_default]
     pub children: Children,
+}
+
+#[derive(Clone, PartialEq)]
+pub struct XContainerContext {
+    pub size: ComputedSize,
 }
 
 pub struct XContainer;
@@ -67,7 +81,9 @@ impl Component for XContainer {
     fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {
         html! {
             <div class="x-container">
-                {for ctx.props().children.iter()}
+                <ContextProvider<XContainerContext> context={XContainerContext {size: ctx.props().size.clone()}}>
+                    {for ctx.props().children.iter()}
+                </ContextProvider<XContainerContext>>
             </div>
         }
     }

@@ -1,6 +1,11 @@
-#![recursion_limit="1024"]
+#![recursion_limit = "1024"]
 use yew::prelude::*;
-use yewxel::{xbutton::XButton, xcontainer::{XContainer, Mode}};
+use yewxel::{
+    xbutton::XButton,
+    xcontainer::{Mode, XContainer},
+    xlabel::XLabel,
+    ComputedSize,
+};
 
 struct ExampleApp;
 
@@ -9,15 +14,17 @@ impl Component for ExampleApp {
     type Properties = ();
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self 
+        Self
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
             <div>
-                <XContainer mode={Mode::Auto}>
+                <XContainer size={ComputedSize::Small} mode={Mode::Auto}>
                     <XButton>
-                        {"Test"}
+                        <XLabel>
+                            {"Test"}
+                        </XLabel>
                     </XButton>
                 </XContainer>
             </div>
