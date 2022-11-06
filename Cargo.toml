@@ -1,0 +1,30 @@
+[package]
+name = "yewxel"
+version = "0.1.0"
+edition = "2021"
+description = "Xel toolkit elements"
+
+[dependencies]
+yew = "0.19"
+web-sys = {version =  "*", features = ["Document", "Window", "HtmlCollection", "MediaQueryList"]}
+
+[build-dependencies]
+lightningcss = {git="https://github.com/openxd/lightningcss.git"}
+parcel_selectors = {git="https://github.com/openxd/lightningcss.git"}
+cssparser = "0.29.6"
+
+[features]
+# Supported Themes
+theme-adwaita = []
+theme-fluent = []
+theme-cupertino = []
+# Supported Modes
+mode-dark = []
+mode-light = []
+# Supported Elements
+element-x-button = []
+element-x-buttons = []
+element-x-menubar = []
+
+[workspace]
+members = ["example","."]
