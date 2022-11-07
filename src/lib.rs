@@ -3,6 +3,8 @@ pub mod xbutton;
 pub mod xcontainer;
 #[cfg(feature="element-x-label")]
 pub mod xlabel;
+#[cfg(feature="element-x-tooltip")]
+pub mod xtooltip;
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum ComputedSize {

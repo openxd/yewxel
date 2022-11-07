@@ -1,6 +1,11 @@
 use std::fmt::Write;
-use yew::Callback;
-use yew::{html, Children, Component, Properties};
+use web_sys::MouseEvent;
+use yew::html::ChildrenRenderer;
+use yew::{
+    function_component, use_context, use_reducer, use_state, Callback, Reducible,
+    UseReducerHandle,
+};
+use yew::{html, ContextProvider, Properties};
 
 use crate::calculate_computed_style;
 use crate::xcontainer::XContainerContext;
@@ -35,6 +40,27 @@ impl ToString for XButtonSkin {
     }
 }
 
+#[derive(PartialEq, Clone, derive_more::From)]
+pub enum XButtonChild {
+    #[cfg(feature = "element-x-tooltip")]
+    Tooltip(yew::virtual_dom::VChild<crate::xtooltip::XTooltip>),
+    #[cfg(feature = "element-x-label")]
+    Label(yew::virtual_dom::VChild<crate::xlabel::XLabel>),
+    Other(yew::Html),
+}
+
+impl Into<yew::Html> for XButtonChild {
+    fn into(self) -> yew::Html {
+        match self {
+            #[cfg(feature = "element-x-tooltip")]
+            Self::Tooltip(child) => child.into(),
+            #[cfg(feature = "element-x-label")]
+            Self::Label(child) => child.into(),
+            Self::Other(child) => child.into(),
+        }
+    }
+}
+
 /// All props associated with the XButton component
 #[derive(PartialEq, Properties)]
 pub struct XButtonProps {
@@ -64,67 +90,147 @@ pub struct XButtonProps {
     pub size: Option<XComponentSize>,
 
     #[prop_or_default]
-    pub children: Children,
+    pub children: ChildrenRenderer<XButtonChild>,
+
+    #[prop_or_default]
+    pub onclick: Option<Callback<MouseEvent>>,
+
+    #[prop_or_default]
+    pub ontoggle: Option<Callback<MouseEvent>>,
 }
+
+#[derive(PartialEq)]
+pub enum XButtonEvent {
+    Click(MouseEvent),
+    MouseEnter(MouseEvent),
+    MouseLeave(MouseEvent),
+}
+
+#[derive(PartialEq)]
+pub struct XButtonMessage {
+    pub event: Option<XButtonEvent>,
+}
+
+impl Reducible for XButtonMessage {
+    type Action = Option<XButtonEvent>;
+
+    fn reduce(self: std::rc::Rc<Self>, action: Self::Action) -> std::rc::Rc<Self> {
+        XButtonMessage { event: action }.into()
+    }
+}
+
+pub(crate) type XButtonContext = UseReducerHandle<XButtonMessage>;
 
 /// `XButton` has the same purpose as the standard HTML `button` element, but can be easily
 /// composited with other YewXel elements.
-pub struct XButton;
+#[function_component(XButton)]
+pub fn x_button(props: &XButtonProps) -> yew::Html {
+    let pressed = use_state(|| false);
 
-impl Component for XButton {
-    type Message = ();
-    type Properties = XButtonProps;
-
-    fn create(_ctx: &yew::Context<Self>) -> Self {
-        XButton
+    for _child in props.children.iter() {
+        // TODO: Check for menu and popovers 
     }
 
-    fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {
-        let props = ctx.props();
-        let mut classes = String::from("x-button");
+    let mut classes = String::from("x-button");
 
-        if props.toggled {
-            classes.push_str(" toggled");
-        }
+    if props.toggled {
+        classes.push_str(" toggled");
+    }
 
-        if props.disabled {
-            classes.push_str(" disabled");
-        }
+    if props.disabled {
+        classes.push_str(" disabled");
+    }
 
-        if props.togglable {
-            classes.push_str(" togglable");
-        }
+    if props.togglable {
+        classes.push_str(" togglable");
+    }
 
-        if props.disabled {
-            classes.push_str(" disabled");
-        }
+    if props.disabled {
+        classes.push_str(" disabled");
+    }
 
-        if props.condensed {
-            classes.push_str(" condensed");
-        }
+    if props.condensed {
+        classes.push_str(" condensed");
+    }
 
-        write!(classes, " skin-{}", props.skin.to_string()).unwrap();
+    if *pressed.clone() {
+        classes.push_str(" pressed");
+    }
 
-        if let Some(size) = props.size.clone() {
-            write!(classes, " size-{}", size.to_string()).unwrap();
-        }
+    write!(classes, " skin-{}", props.skin.to_string()).unwrap();
 
-        let default_size = ctx
-            .link()
-            .context::<XContainerContext>(Callback::noop())
-            .expect("XContainer should be the root.");
-        let computed_size =
-            calculate_computed_style(props.size.clone(), default_size.0.size.clone());
-        write!(classes, " computedsize-{}", computed_size.to_string()).unwrap();
+    if let Some(size) = props.size.clone() {
+        write!(classes, " size-{}", size.to_string()).unwrap();
+    }
 
-        html! {
-            <div class={classes}>
-              <div class="x-button-ripples"></div>
-              {for ctx.props().children.iter()}
-              <svg class="x-button-arrow" part="arrow" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <path class="x-button-arrow-path"></path>
-              </svg>
-            </div>
-        }
+    let context =
+        use_context::<XContainerContext>().expect("XContainer should be the root element");
+
+    let computed_size = calculate_computed_style(props.size.clone(), context.size.clone());
+    write!(classes, " computedsize-{}", computed_size.to_string()).unwrap();
+
+    let message = use_reducer(|| XButtonMessage { event: None });
+
+    let onclick = {
+        let message = message.clone();
+        let oc_callback = props.onclick.clone();
+        let ot_callback = props.ontoggle.clone();
+        let togglable = props.togglable;
+        Callback::from(move |e: MouseEvent| {
+            if togglable {
+                if let Some(callback) = &ot_callback {
+                    callback.emit(e);
+                }
+            } else if let Some(callback) = &oc_callback {
+                message.dispatch(Some(XButtonEvent::Click(e.clone())));
+                callback.emit(e);
+            }
+        })
+    };
+
+    let onmouseenter = {
+        let message = message.clone();
+        Callback::from(move |e: MouseEvent| {
+            message.dispatch(Some(XButtonEvent::MouseEnter(e)));
+        })
+    };
+
+    let onmouseleave = {
+        let message = message.clone();
+        Callback::from(move |e: MouseEvent| {
+            message.dispatch(Some(XButtonEvent::MouseLeave(e)));
+        })
+    };
+
+    let onmousedown = {
+        let pressed = pressed.clone();
+        Callback::from(move |_e: MouseEvent| {
+            pressed.set(true);
+        })
+    };
+
+    let onmouseup = {
+        let pressed = pressed.clone();
+        Callback::from(move |_e: MouseEvent| {
+            pressed.set(false);
+        })
+    };
+
+    html! {
+        <ContextProvider<XButtonContext> context={message}>
+        <div
+            onclick={onclick}
+            onmouseenter={onmouseenter}
+            onmousedown={onmousedown}
+            onmouseleave={onmouseleave}
+            onmouseup={onmouseup}
+            class={classes}>
+          <div class="x-button-ripples"></div>
+          {for props.children.iter()}
+          <svg class="x-button-arrow" part="arrow" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <path class="x-button-arrow-path"></path>
+          </svg>
+        </div>
+        </ContextProvider<XButtonContext>>
     }
 }

@@ -4,6 +4,7 @@ use yewxel::{
     xbutton::XButton,
     xcontainer::{Mode, XContainer},
     xlabel::XLabel,
+    xtooltip::XTooltip,
     ComputedSize,
 };
 
@@ -25,6 +26,11 @@ impl Component for ExampleApp {
                         <XLabel>
                             {"Test"}
                         </XLabel>
+                        <XTooltip>
+                            <XLabel>
+                                {"Test2"}
+                            </XLabel>
+                        </XTooltip>
                     </XButton>
                 </XContainer>
             </div>

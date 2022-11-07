@@ -13,4 +13,5 @@ yewxel = { path = "../", features = [
   "theme-cupertino",
   "element-x-button",
   "element-x-label",
+  "element-x-tooltip",
 ] }

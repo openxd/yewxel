@@ -6,12 +6,23 @@ description = "Xel toolkit elements"
 
 [dependencies]
 yew = "0.19"
-web-sys = {version =  "*", features = ["Document", "Window", "HtmlCollection", "MediaQueryList"]}
+web-sys = { version = "*", features = [
+  "Document",
+  "Window",
+  "HtmlCollection",
+  "MediaQueryList",
+  "MouseEvent",
+  "Event",
+  "EventTarget",
+  "HtmlElement",
+  "DomRect"
+] }
 js-sys = "*"
+derive_more = "^0.99"
 
 [build-dependencies]
-lightningcss = {git="https://github.com/openxd/lightningcss.git"}
-parcel_selectors = {git="https://github.com/openxd/lightningcss.git"}
+lightningcss = { git = "https://github.com/openxd/lightningcss.git" }
+parcel_selectors = { git = "https://github.com/openxd/lightningcss.git" }
 cssparser = "0.29.6"
 
 [features]
@@ -24,9 +35,10 @@ mode-dark = []
 mode-light = []
 # Supported Elements
 element-x-label = []
+element-x-tooltip = []
 element-x-button = []
 element-x-buttons = []
 element-x-menubar = []
 
 [workspace]
-members = ["example","."]
+members = ["example", "."]

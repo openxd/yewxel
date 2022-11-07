@@ -17,7 +17,7 @@ impl Component for XLabel {
 
     type Properties = XLabelProps;
 
-    fn create(ctx: &yew::Context<Self>) -> Self {
+    fn create(_ctx: &yew::Context<Self>) -> Self {
         XLabel
     }
 

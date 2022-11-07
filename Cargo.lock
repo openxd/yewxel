@@ -1219,6 +1219,7 @@ name = "yewxel"
 version = "0.1.0"
 dependencies = [
  "cssparser",
+ "derive_more",
  "js-sys",
  "lightningcss",
  "parcel_selectors",
