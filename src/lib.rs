@@ -5,6 +5,7 @@ pub mod xcontainer;
 pub mod xlabel;
 #[cfg(feature="element-x-tooltip")]
 pub mod xtooltip;
+mod utils;
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum ComputedSize {
@@ -56,6 +57,29 @@ impl ToString for XComponentSize {
     }
 }
 
+#[derive(PartialEq)]
+pub enum CSSEasing {
+    Linear,
+    Ease,
+    EaseIn,
+    EaseOut,
+    EaseInOut,
+    CubicBezier(f64, f64, f64, f64)
+}
+
+impl ToString for CSSEasing {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Linear => String::from("linear"),
+            Self::Ease => String::from("ease"),
+            Self::EaseIn => String::from("ease-in"),
+            Self::EaseOut => String::from("ease-out"),
+            Self::EaseInOut => String::from("ease-in-out"),
+            Self::CubicBezier(x1,y1,x2,y2) => format!("cubic-bezier({},{},{},{})",x1, y1, x2, y2)
+        }
+    }
+}
+
 pub(crate) fn calculate_computed_style(opt_custom_size: Option<XComponentSize>, default_size: ComputedSize) -> ComputedSize {
     match opt_custom_size {
         Some(custom_size) => match custom_size {
@@ -69,6 +93,3 @@ pub(crate) fn calculate_computed_style(opt_custom_size: Option<XComponentSize>, 
     }
 }
 
-pub(crate) fn console_log(message: String) {
-    web_sys::console::log_1(&js_sys::JsString::from(message));
-}

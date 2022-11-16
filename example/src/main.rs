@@ -4,7 +4,7 @@ use yewxel::{
     xbutton::XButton,
     xcontainer::{Mode, XContainer},
     xlabel::XLabel,
-    xtooltip::XTooltip,
+    xtooltip::{XTooltip, XTooltipAlign},
     ComputedSize,
 };
 
@@ -26,9 +26,39 @@ impl Component for ExampleApp {
                         <XLabel>
                             {"Test"}
                         </XLabel>
-                        <XTooltip>
+                        <XTooltip align={XTooltipAlign::Right}>
                             <XLabel>
-                                {"Test2"}
+                                {"Test2 Long String"}
+                            </XLabel>
+                        </XTooltip>
+                    </XButton>
+                    <XButton>
+                        <XLabel>
+                            {"Test"}
+                        </XLabel>
+                        <XTooltip align={XTooltipAlign::Right}>
+                            <XLabel>
+                                {"Test2 Long String"}
+                            </XLabel>
+                        </XTooltip>
+                    </XButton>
+                    <XButton>
+                        <XLabel>
+                            {"Test"}
+                        </XLabel>
+                        <XTooltip align={XTooltipAlign::Right}>
+                            <XLabel>
+                                {"Test2 Long String"}
+                            </XLabel>
+                        </XTooltip>
+                    </XButton>
+                    <XButton>
+                        <XLabel>
+                            {"Test"}
+                        </XLabel>
+                        <XTooltip align={XTooltipAlign::Right}>
+                            <XLabel>
+                                {"Test2 Long String"}
                             </XLabel>
                         </XTooltip>
                     </XButton>

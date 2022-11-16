@@ -23,6 +23,11 @@ const PRINTER_OPTIONS: PrinterOptions = PrinterOptions {
 };
 
 fn main() {
+
+    if std::env::var("DOCS_RS").is_ok() {
+        return;
+    }
+
     let mut elements = vec![];
     let mut ui = None;
 
