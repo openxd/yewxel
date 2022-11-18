@@ -12,6 +12,10 @@ impl Component for XMessage {
         XMessage
     }
 
+    fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
+        true
+    }
+
     fn view(&self, _ctx: &yew::Context<Self>) -> yew::Html {
         return html! {
             <div></div>

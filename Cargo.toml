@@ -16,6 +16,9 @@ derive_more = { version = "^0.99", optional = true }
 wasm-bindgen = "0.2.83"
 js-sys = { version = "^0.3", optional = true }
 serde-wasm-bindgen = { version = "0.4.5", optional = true }
+fluent = {version="^0.16", optional = true}
+prokio = {version = "^0.1", optional = true}
+wasm-bindgen-futures = {version="^0.4", optional = true }
 
 [build-dependencies]
 lightningcss = { git = "https://github.com/openxd/lightningcss.git" }
@@ -23,7 +26,16 @@ parcel_selectors = { git = "https://github.com/openxd/lightningcss.git" }
 cssparser = "0.29.6"
 
 [features]
-default = []
+default = ["feature-intl"]
+# Supported Features
+feature-intl = [
+    "web-sys/Url",
+    "web-sys/Request",
+    "web-sys/Response",
+    "web-sys/RequestMode",
+    "web-sys/RequestInit",
+    "fluent","prokio", "wasm-bindgen-futures"
+]
 # Supported Themes
 theme-adwaita = []
 theme-fluent = []

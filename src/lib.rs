@@ -7,7 +7,13 @@ pub mod xlabel;
 pub mod xtooltip;
 #[cfg(feature="element-x-message")]
 pub mod xmessage;
+#[cfg(feature="feature-intl")]
+mod intl;
 mod utils;
+
+
+#[cfg(feature = "feature-intl")]
+pub use web_sys::Url;
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum ComputedSize {

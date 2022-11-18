@@ -6,6 +6,7 @@ use yewxel::{
     xlabel::XLabel,
     xtooltip::{XTooltip, XTooltipAlign},
     ComputedSize,
+    Url
 };
 
 struct ExampleApp;
@@ -21,7 +22,7 @@ impl Component for ExampleApp {
     fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
             <div>
-                <XContainer size={ComputedSize::Small} mode={Mode::Auto}>
+                <XContainer locale="en-US" ftls={vec![Url::new("http://127.0.0.1:8080/en-US.ftl").unwrap()]} size={ComputedSize::Small} mode={Mode::Auto}>
                     <XButton>
                         <XLabel>
                             {"Test"}

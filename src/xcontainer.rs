@@ -1,7 +1,8 @@
 use std::sync::Once;
 
+use prokio::spawn_local;
 use web_sys::window;
-use yew::{html, Children, Component, Properties, ContextProvider};
+use yew::{html, Children, Component, ContextProvider, Properties};
 
 use crate::ComputedSize;
 
@@ -42,8 +43,31 @@ pub struct XContainerProps {
     #[prop_or_default]
     pub size: ComputedSize,
 
+    /// Urls to the FTL files
+    #[cfg(feature = "feature-intl")]
+    #[prop_or_default]
+    pub ftls: Vec<web_sys::Url>,
+
+    /// Identifier of the language
+    #[cfg(feature = "feature-intl")]
+    #[prop_or(String::from("en-US"))]
+    pub locale: String,
+
     #[prop_or_default]
     pub children: Children,
+}
+
+#[cfg(feature = "feature-intl")]
+pub enum IntlState {
+    Initialized,
+    Loaded(fluent::FluentBundle<fluent::FluentResource>),
+}
+
+#[derive(PartialEq)]
+pub enum XContainerMessage {
+    Initialized,
+    #[cfg(feature = "feature-intl")]
+    LocaleLoaded(web_sys::Url, String),
 }
 
 #[derive(Clone, PartialEq)]
@@ -51,10 +75,15 @@ pub struct XContainerContext {
     pub size: ComputedSize,
 }
 
-pub struct XContainer;
+pub struct XContainer {
+    #[cfg(feature = "feature-intl")]
+    pub intl_state: std::rc::Rc<std::cell::RefCell<crate::intl::Intl>>,
+    #[cfg(feature = "feature-intl")]
+    old_props: XContainerProps,
+}
 
 impl Component for XContainer {
-    type Message = ();
+    type Message = XContainerMessage;
     type Properties = XContainerProps;
 
     fn create(_ctx: &yew::Context<Self>) -> Self {
@@ -75,17 +104,87 @@ impl Component for XContainer {
             #[cfg(all(feature = "mode-light", feature = "mode-dark"))]
             apply_mode_styles(window, document, mode);
         });
-        XContainer
+
+        XContainer {
+            #[cfg(feature = "feature-intl")]
+            intl_state: {
+                let intl = std::rc::Rc::new(std::cell::RefCell::new(crate::intl::Intl::new(
+                    _ctx.props().locale.clone(),
+                )));
+                let link = _ctx.link().clone();
+
+                if _ctx.props().ftls.len() > 0 {
+                    let ftls = _ctx.props().ftls.clone();
+                    spawn_local(async move {
+                        for ftl in ftls {
+                            let contents =
+                                crate::utils::load_text_content(ftl.clone()).await.unwrap();
+                            link.send_message(XContainerMessage::LocaleLoaded(ftl, contents));
+                        }
+                    });
+                }
+
+                intl
+            },
+            #[cfg(feature = "feature-intl")]
+            old_props: _ctx.props().clone(),
+        }
+    }
+
+    #[cfg(feature = "feature-intl")]
+    fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            XContainerMessage::LocaleLoaded(url, content) => {
+                self.intl_state.borrow_mut().load(url, content).unwrap();
+                true
+            }
+            _ => false,
+        }
+    }
+
+    #[cfg(feature = "feature-intl")]
+    fn changed(&mut self, ctx: &yew::Context<Self>) -> bool {
+        if !ctx.props().ftls.eq(&self.old_props.ftls) || ctx.props().locale != self.old_props.locale
+        {
+            if ctx.props().locale != self.old_props.locale {
+                self.intl_state
+                    .borrow_mut()
+                    .change(ctx.props().locale.clone());
+            }
+
+            let ftls = ctx.props().ftls.clone();
+            let link = ctx.link().clone();
+            if ftls.len() > 0 {
+                spawn_local(async move {
+                    for ftl in ftls {
+                        let contents = crate::utils::load_text_content(ftl.clone()).await.unwrap();
+                        link.send_message(XContainerMessage::LocaleLoaded(ftl, contents));
+                    }
+                });
+            }
+        }
+
+        self.old_props = ctx.props().clone();
+        true
     }
 
     fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {
-        html! {
+        let content: yew::Html = html! {
             <div class="x-container">
                 <ContextProvider<XContainerContext> context={XContainerContext {size: ctx.props().size.clone()}}>
                     {for ctx.props().children.iter()}
                 </ContextProvider<XContainerContext>>
             </div>
+        };
+
+        #[cfg(feature = "feature-intl")]
+        html! {
+            <ContextProvider<std::rc::Rc<std::cell::RefCell<crate::intl::Intl>>> context={self.intl_state.clone()}>
+                {content}
+            </ContextProvider<std::rc::Rc<std::cell::RefCell<crate::intl::Intl>>>>
         }
+        #[cfg(not(feature = "feature-intl"))]
+        content
     }
 }
 
