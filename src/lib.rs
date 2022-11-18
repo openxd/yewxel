@@ -5,6 +5,8 @@ pub mod xcontainer;
 pub mod xlabel;
 #[cfg(feature="element-x-tooltip")]
 pub mod xtooltip;
+#[cfg(feature="element-x-message")]
+pub mod xmessage;
 mod utils;
 
 #[derive(PartialEq, Clone, Debug)]
@@ -80,6 +82,7 @@ impl ToString for CSSEasing {
     }
 }
 
+#[cfg(feature="element-x-button")]
 pub(crate) fn calculate_computed_style(opt_custom_size: Option<XComponentSize>, default_size: ComputedSize) -> ComputedSize {
     match opt_custom_size {
         Some(custom_size) => match custom_size {

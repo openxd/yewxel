@@ -1,6 +1,6 @@
 use std::sync::Once;
 
-use web_sys::{window, Document, Window};
+use web_sys::window;
 use yew::{html, Children, Component, Properties, ContextProvider};
 
 use crate::ComputedSize;
@@ -57,9 +57,9 @@ impl Component for XContainer {
     type Message = ();
     type Properties = XContainerProps;
 
-    fn create(ctx: &yew::Context<Self>) -> Self {
+    fn create(_ctx: &yew::Context<Self>) -> Self {
         #[cfg(all(feature = "mode-light", feature = "mode-dark"))]
-        let mode = ctx.props().mode.clone();
+        let mode = _ctx.props().mode.clone();
         LOADED.call_once(move || {
             let window = window().unwrap();
             let document = window.document().unwrap();
@@ -90,7 +90,7 @@ impl Component for XContainer {
 }
 
 #[cfg(all(feature = "mode-light", feature = "mode-dark"))]
-pub fn apply_mode_styles(window: Window, document: Document, mode: Mode) {
+pub fn apply_mode_styles(window: web_sys::Window, document: web_sys::Document, mode: Mode) {
     let styles = match mode {
         Mode::Dark => DARK_CSS,
         Mode::Light => LIGHT_CSS,

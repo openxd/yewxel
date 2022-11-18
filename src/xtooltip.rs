@@ -24,13 +24,18 @@
 //! ```
 //!
 //! > Enable `"element-x-tooltip"` feature to use this component.
+
+// TODO: Implement animation with Element.animate method once
+// https://github.com/rustwasm/wasm-bindgen/pull/3142 merged
+// TODO: Update position after resize the window
 use std::fmt::Write;
-use web_sys::{DomRect, HtmlElement};
-use yew::{html, Callback, Children, Component, NodeRef, Properties, TargetCast};
+use yew::{html, Children, Component, NodeRef, Properties};
 
 use crate::CSSEasing;
 
+#[cfg(feature = "element-x-button")]
 const WINDOW_WHITESPACE: f64 = 8.0;
+#[cfg(feature = "element-x-button")]
 const SPACE_BETWEEN: f64 = 8.0;
 
 /// Type of the XTooltip component
@@ -127,11 +132,11 @@ pub struct XTooltipProps {
     /// When opening with x-button mouseenter event
     #[cfg(feature = "element-x-button")]
     #[prop_or_default]
-    pub on_open: Option<Callback<()>>,
+    pub on_open: Option<yew::Callback<()>>,
     /// When closing with x-button mouseleave event
     #[cfg(feature = "element-x-button")]
     #[prop_or_default]
-    pub on_close: Option<Callback<()>>,
+    pub on_close: Option<yew::Callback<()>>,
     /// Styles to apply for root element of tooltip
     #[prop_or_default]
     pub style: Option<String>,
@@ -157,13 +162,13 @@ pub enum XTooltipMessage {
 /// XTooltip Element
 pub struct XTooltip {
     #[cfg(feature = "element-x-button")]
-    position: Option<DomRect>,
+    position: Option<web_sys::DomRect>,
     #[cfg(feature = "element-x-button")]
     open: bool,
     #[cfg(feature = "element-x-button")]
     node_ref: NodeRef,
     #[cfg(feature = "element-x-button")]
-    x_button_context_listener: Option<yew::context::ContextHandle<crate::xbutton::XButtonContext>>,
+    _x_button_context_listener: Option<yew::context::ContextHandle<crate::xbutton::XButtonContext>>,
 }
 
 impl Component for XTooltip {
@@ -182,14 +187,14 @@ impl Component for XTooltip {
             .context(ctx.link().callback(XTooltipMessage::XButtonContextUpdated))
         {
             XTooltip {
-                x_button_context_listener: Some(context_listener),
+                _x_button_context_listener: Some(context_listener),
                 open: false,
                 position: None,
                 node_ref: NodeRef::default(),
             }
         } else {
             XTooltip {
-                x_button_context_listener: None,
+                _x_button_context_listener: None,
                 open: false,
                 position: None,
                 node_ref: NodeRef::default(),
@@ -200,12 +205,13 @@ impl Component for XTooltip {
     #[cfg(feature = "element-x-button")]
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         use std::collections::HashMap;
+        use yew::TargetCast;
 
         use js_sys::Object;
         use wasm_bindgen::{prelude::Closure, JsCast};
         use web_sys::{window, Element};
 
-        use crate::{xbutton::XButtonEvent, utils::console_log};
+        use crate::xbutton::XButtonEvent;
 
         let align = ctx.props().align.clone();
         let style = ctx.props().style.clone().unwrap_or(String::from(""));
@@ -215,7 +221,7 @@ impl Component for XTooltip {
                 if let Some(event) = &message.event {
                     match event {
                         XButtonEvent::MouseEnter(e) => {
-                            let current_element = self.node_ref.cast::<HtmlElement>().unwrap();
+                            let current_element = self.node_ref.cast::<web_sys::HtmlElement>().unwrap();
                             if !self.open {
                                 let props = ctx.props();
                                 if props.on_open.is_some() {
@@ -237,7 +243,7 @@ impl Component for XTooltip {
                             }
                             self.open = true;
                             if self.position.is_none() {
-                                if let Some(element) = e.target_dyn_into::<HtmlElement>() {
+                                if let Some(element) = e.target_dyn_into::<web_sys::HtmlElement>() {
                                     current_element
                                         .set_attribute(
                                             "style",
@@ -292,7 +298,6 @@ impl Component for XTooltip {
                                 );
 
                                 let onfinish = {
-                                    console_log(format!("Reached"));
                                     let link = ctx.link().clone();
                                     Closure::wrap(Box::new(move || {
                                         link.send_message(
@@ -380,7 +385,7 @@ impl Component for XTooltip {
 
 #[cfg(feature = "element-x-button")]
 fn calculate_position(
-    target_rect: DomRect,
+    target_rect: web_sys::DomRect,
     tool_width: f64,
     tool_height: f64,
     win_width: f64,
@@ -388,7 +393,8 @@ fn calculate_position(
     align: XTooltipAlign,
     from: Option<XTooltipAlign>,
     try_count: u8,
-) -> DomRect {
+) -> web_sys::DomRect {
+    use web_sys::DomRect;
     if try_count > 3 {
         return target_rect;
     }
