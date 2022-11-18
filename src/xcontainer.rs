@@ -57,12 +57,6 @@ pub struct XContainerProps {
     pub children: Children,
 }
 
-#[cfg(feature = "feature-intl")]
-pub enum IntlState {
-    Initialized,
-    Loaded(fluent::FluentBundle<fluent::FluentResource>),
-}
-
 #[derive(PartialEq)]
 pub enum XContainerMessage {
     Initialized,
