@@ -5,6 +5,7 @@ use yewxel::{
     xcontainer::{Mode, XContainer},
     xlabel::XLabel,
     xtooltip::{XTooltip, XTooltipAlign},
+    xmessage::XMessage,
     ComputedSize,
     Url
 };
@@ -25,7 +26,7 @@ impl Component for ExampleApp {
                 <XContainer locale="en-US" ftls={vec![Url::new("http://127.0.0.1:8080/en-US.ftl").unwrap()]} size={ComputedSize::Small} mode={Mode::Auto}>
                     <XButton>
                         <XLabel>
-                            {"Test"}
+                            <XMessage href="#intro" args="name:Ramesh" />
                         </XLabel>
                         <XTooltip align={XTooltipAlign::Right}>
                             <XLabel>

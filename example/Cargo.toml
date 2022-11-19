@@ -15,4 +15,5 @@ yewxel = { path = "../", features = [
   "element-x-label",
   "element-x-tooltip",
   "feature-intl",
+  "element-x-message"
 ] }

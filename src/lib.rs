@@ -1,17 +1,17 @@
+pub mod xcontainer;
 #[cfg(feature="element-x-button")]
 pub mod xbutton;
-pub mod xcontainer;
 #[cfg(feature="element-x-label")]
 pub mod xlabel;
 #[cfg(feature="element-x-tooltip")]
 pub mod xtooltip;
-#[cfg(feature="element-x-message")]
+#[cfg(all(feature="element-x-message", feature="feature-intl"))]
 pub mod xmessage;
 #[cfg(feature="feature-intl")]
 mod intl;
 mod utils;
 
-
+/// Re-exported from `web_sys` crate.
 #[cfg(feature = "feature-intl")]
 pub use web_sys::Url;
 

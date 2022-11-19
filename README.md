@@ -25,7 +25,7 @@ engines.
   + [ ] `x-menu`
   + [ ] `x-menubar`
   + [ ] `x-menuitem`
-  + [ ] `x-message`
+  + [x] `x-message`
   + [ ] `x-notification`
   + [ ] `x-numberinput`
   + [ ] `x-popover`

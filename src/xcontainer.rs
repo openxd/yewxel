@@ -71,7 +71,7 @@ pub struct XContainerContext {
 
 pub struct XContainer {
     #[cfg(feature = "feature-intl")]
-    pub intl_state: std::rc::Rc<std::cell::RefCell<crate::intl::Intl>>,
+    pub intl_state: crate::intl::Intl,
     #[cfg(feature = "feature-intl")]
     old_props: XContainerProps,
 }
@@ -102,9 +102,9 @@ impl Component for XContainer {
         XContainer {
             #[cfg(feature = "feature-intl")]
             intl_state: {
-                let intl = std::rc::Rc::new(std::cell::RefCell::new(crate::intl::Intl::new(
+                let intl = crate::intl::Intl::new(
                     _ctx.props().locale.clone(),
-                )));
+                );
                 let link = _ctx.link().clone();
 
                 if _ctx.props().ftls.len() > 0 {
@@ -129,7 +129,7 @@ impl Component for XContainer {
     fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         match msg {
             XContainerMessage::LocaleLoaded(url, content) => {
-                self.intl_state.borrow_mut().load(url, content).unwrap();
+                self.intl_state.load(url, content).unwrap();
                 true
             }
             _ => false,
@@ -142,7 +142,6 @@ impl Component for XContainer {
         {
             if ctx.props().locale != self.old_props.locale {
                 self.intl_state
-                    .borrow_mut()
                     .change(ctx.props().locale.clone());
             }
 
@@ -173,9 +172,9 @@ impl Component for XContainer {
 
         #[cfg(feature = "feature-intl")]
         html! {
-            <ContextProvider<std::rc::Rc<std::cell::RefCell<crate::intl::Intl>>> context={self.intl_state.clone()}>
+            <ContextProvider<crate::intl::Intl> context={self.intl_state.clone()}>
                 {content}
-            </ContextProvider<std::rc::Rc<std::cell::RefCell<crate::intl::Intl>>>>
+            </ContextProvider<crate::intl::Intl>>
         }
         #[cfg(not(feature = "feature-intl"))]
         content
