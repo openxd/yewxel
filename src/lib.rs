@@ -7,6 +7,8 @@ pub mod xlabel;
 pub mod xtooltip;
 #[cfg(all(feature="element-x-message", feature="feature-intl"))]
 pub mod xmessage;
+#[cfg(feature="element-x-menuitem")]
+pub mod xmenuitem;
 #[cfg(feature="feature-intl")]
 mod intl;
 mod utils;

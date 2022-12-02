@@ -62,6 +62,7 @@ element-x-tooltip = [
 ]
 element-x-button = ["web-sys/MouseEvent", "web-sys/HtmlElement", "derive_more"]
 element-x-buttons = []
+element-x-menuitem = []
 element-x-menubar = []
 
 [workspace]
