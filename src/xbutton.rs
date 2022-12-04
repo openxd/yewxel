@@ -7,7 +7,7 @@ use yew::{
 };
 use yew::{html, ContextProvider, Properties};
 
-use crate::calculate_computed_style;
+use crate::calculate_computed_size;
 use crate::xcontainer::XContainerContext;
 use crate::XComponentSize;
 
@@ -166,7 +166,7 @@ pub fn x_button(props: &XButtonProps) -> yew::Html {
     let context =
         use_context::<XContainerContext>().expect("XContainer should be the root element");
 
-    let computed_size = calculate_computed_style(props.size.clone(), context.size.clone());
+    let computed_size = calculate_computed_size(props.size.clone(), context.size.clone());
     write!(classes, " computedsize-{}", computed_size.to_string()).unwrap();
 
     let message = use_reducer(|| XButtonMessage { event: None });
