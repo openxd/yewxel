@@ -72,8 +72,6 @@ pub struct XContainerContext {
 pub struct XContainer {
     #[cfg(feature = "feature-intl")]
     pub intl_state: crate::intl::Intl,
-    #[cfg(feature = "feature-intl")]
-    old_props: XContainerProps,
 }
 
 impl Component for XContainer {
@@ -120,8 +118,6 @@ impl Component for XContainer {
 
                 intl
             },
-            #[cfg(feature = "feature-intl")]
-            old_props: _ctx.props().clone(),
         }
     }
 
@@ -137,10 +133,10 @@ impl Component for XContainer {
     }
 
     #[cfg(feature = "feature-intl")]
-    fn changed(&mut self, ctx: &yew::Context<Self>) -> bool {
-        if !ctx.props().ftls.eq(&self.old_props.ftls) || ctx.props().locale != self.old_props.locale
+    fn changed(&mut self, ctx: &yew::Context<Self>, old_props: &Self::Properties) -> bool {
+        if !ctx.props().ftls.eq(&old_props.ftls) || ctx.props().locale != old_props.locale
         {
-            if ctx.props().locale != self.old_props.locale {
+            if ctx.props().locale != old_props.locale {
                 self.intl_state
                     .change(ctx.props().locale.clone());
             }
@@ -156,8 +152,6 @@ impl Component for XContainer {
                 });
             }
         }
-
-        self.old_props = ctx.props().clone();
         true
     }
 

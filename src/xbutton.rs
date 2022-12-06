@@ -123,8 +123,8 @@ pub(crate) type XButtonContext = UseReducerHandle<XButtonMessage>;
 
 /// `XButton` has the same purpose as the standard HTML `button` element, but can be easily
 /// composited with other YewXel elements.
-#[function_component(XButton)]
-pub fn x_button(props: &XButtonProps) -> yew::Html {
+#[function_component]
+pub fn XButton(props: &XButtonProps) -> yew::Html {
     let pressed = use_state(|| false);
 
     for _child in props.children.iter() {

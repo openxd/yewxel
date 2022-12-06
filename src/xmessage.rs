@@ -44,8 +44,6 @@ pub struct XMessageProps {
 pub struct XMessage {
     intl_state: Intl,
     text: Option<String>,
-    prev_href: String,
-    prev_args: Option<String>,
     _intl_listener: ContextHandle<Intl>,
 }
 
@@ -95,8 +93,6 @@ impl Component for XMessage {
             text: None,
             intl_state,
             _intl_listener,
-            prev_href: ctx.props().href.clone(),
-            prev_args: ctx.props().args.clone(),
         }
     }
 
@@ -118,12 +114,10 @@ impl Component for XMessage {
         }
     }
 
-    fn changed(&mut self, ctx: &yew::Context<Self>) -> bool {
-        if self.prev_href != ctx.props().href || self.prev_args != ctx.props().args {
+    fn changed(&mut self, ctx: &yew::Context<Self>, old_props: &Self::Properties) -> bool {
+        if ctx.props().href != old_props.href || ctx.props().args != old_props.args {
             self.text = self.get_text(ctx);
         }
-        self.prev_href = ctx.props().href.clone();
-        self.prev_args = ctx.props().args.clone();
         true
     }
 

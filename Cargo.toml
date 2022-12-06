@@ -5,7 +5,7 @@ edition = "2021"
 description = "Xel toolkit elements"
 
 [dependencies]
-yew = "0.19"
+yew = "0.20"
 web-sys = { version = "*", features = [
   "Document",
   "Window",

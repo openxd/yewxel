@@ -1,8 +1,8 @@
-use web_sys::{MouseEvent, KeyboardEvent, FocusEvent};
-use yew::{html, Component, Properties, use_context, Children, Callback};
 use std::fmt::Write;
+use web_sys::{FocusEvent, KeyboardEvent, MouseEvent};
+use yew::{html, Callback, Children, Component, ContextHandle, Properties};
 
-use crate::{calculate_computed_size, XComponentSize, xcontainer::XContainerContext};
+use crate::{calculate_computed_size, xcontainer::XContainerContext, XComponentSize};
 
 #[derive(PartialEq, Properties)]
 pub struct XMenuItemProps {
@@ -29,39 +29,57 @@ pub struct XMenuItemProps {
 }
 
 pub struct XMenuItem {
-    focused: bool
+    focused: bool,
+    _container_ctx_listner: ContextHandle<XContainerContext>,
+    container_ctx: XContainerContext,
 }
 
-pub enum XMenuItemChild {
-}
+pub enum XMenuItemChild {}
 
 pub enum XMenuItemMessage {
     Focus(FocusEvent),
-    Blur(Blu)
+    Blur(FocusEvent),
+    ContainerUpdated(XContainerContext),
 }
 
 impl Component for XMenuItem {
-    type Message = ();
+    type Message = XMenuItemMessage;
     type Properties = XMenuItemProps;
 
     fn create(ctx: &yew::Context<Self>) -> Self {
+        let (container_ctx, _container_ctx_listner) = ctx
+            .link()
+            .context(ctx.link().callback(XMenuItemMessage::ContainerUpdated))
+            .expect("Container not found");
+
         XMenuItem {
-            focused: false
+            focused: false,
+            _container_ctx_listner,
+            container_ctx,
         }
     }
 
-    fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
-        
+    fn update(&mut self, _ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            XMenuItemMessage::ContainerUpdated(container_ctx) => {
+                self.container_ctx = container_ctx;
+            }
+            XMenuItemMessage::Focus(_) => {
+                self.focused = true;
+            }
+            XMenuItemMessage::Blur(_) => {
+                self.focused = false;
+            }
+        }
+        true
     }
 
     fn view(&self, ctx: &yew::Context<Self>) -> yew::Html {
         let props = ctx.props();
         let mut classes = String::from("x-menuitem");
 
-        let context =
-            use_context::<XContainerContext>().expect("XContainer should be the root element");
-
-        let computed_size = calculate_computed_size(props.size.clone(), context.size.clone());
+        let computed_size =
+            calculate_computed_size(props.size.clone(), self.container_ctx.size.clone());
         write!(classes, " computedsize-{}", computed_size.to_string()).unwrap();
 
         if props.togglable {
@@ -72,8 +90,28 @@ impl Component for XMenuItem {
             classes.write_str(" toggled").unwrap();
         }
 
+        let onfocus = {
+            let ctx = ctx.link().clone();
+            Callback::from(move |e: FocusEvent| {
+                ctx.send_message(XMenuItemMessage::Focus(e));
+            })
+        };
+
+        let onblur = {
+            let ctx = ctx.link().clone();
+            Callback::from(move |e: FocusEvent| {
+                ctx.send_message(XMenuItemMessage::Blur(e));
+            })
+        };
+
         html! {
-          <div role="menuitem" class={classes.clone()}>
+          <div
+            aria-disabled={if props.disabled {"disabled"} else {""}}
+            onblur={onblur}
+            onfocus={onfocus}
+            tabindex={if props.disabled {"-1"} else {"1"}}
+            role="menuitem"
+            class={classes.clone()}>
             <div class="ripples"></div>
             <svg class="checkmark" viewBox="0 0 100 100" preserveAspectRatio="none">
               <path></path>
