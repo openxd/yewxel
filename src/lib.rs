@@ -90,7 +90,7 @@ impl ToString for CSSEasing {
     }
 }
 
-#[cfg(all(feature="element-x-button", feature="element-x-menuitem"))]
+#[cfg(any(feature="element-x-button", feature="element-x-menuitem"))]
 pub(crate) fn calculate_computed_size(opt_custom_size: Option<XComponentSize>, default_size: ComputedSize) -> ComputedSize {
     match opt_custom_size {
         Some(custom_size) => match custom_size {

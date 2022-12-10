@@ -1,14 +1,14 @@
 use js_sys::{Math::max, Object};
 use prokio::{spawn_local, time::sleep};
 use serde_wasm_bindgen::to_value;
-use wasm_bindgen_futures::JsFuture;
 use std::{
     collections::HashMap,
     fmt::Write,
     time::{Duration, Instant},
 };
 use wasm_bindgen::JsCast;
-use web_sys::{Element, FocusEvent, HtmlElement, MouseEvent, PointerEvent};
+use wasm_bindgen_futures::JsFuture;
+use web_sys::{window, Element, FocusEvent, HtmlElement, MouseEvent, PointerEvent};
 use yew::{html, Callback, Children, Component, ContextHandle, NodeRef, Properties};
 
 use crate::{
@@ -41,7 +41,14 @@ pub struct XMenuItemProps {
     #[prop_or_default]
     pub on_trigger_end: Callback<()>,
     #[prop_or_default]
-    pub trigger_effect: XMenuTriggerEffect,
+    pub trigger_effect: XMenuItemTriggerEffect,
+}
+
+#[derive(PartialEq)]
+enum XMenuItemRippleAnimationStatus {
+    Created,
+    Started,
+    Finished,
 }
 
 struct XMenuItemRipple {
@@ -49,6 +56,8 @@ struct XMenuItemRipple {
     size: f64,
     top: f64,
     left: f64,
+    in_animation: XMenuItemRippleAnimationStatus,
+    out_animation: XMenuItemRippleAnimationStatus,
 }
 
 pub struct XMenuItem {
@@ -60,20 +69,19 @@ pub struct XMenuItem {
     pointer_down: Option<(Instant, PointerEvent)>,
     ripples: Vec<XMenuItemRipple>,
     prev_ripples_count: u8,
-    ripple_in_pending: bool,
     pressed: bool,
 }
 
 #[derive(PartialEq)]
-pub enum XMenuTriggerEffect {
+pub enum XMenuItemTriggerEffect {
     Ripple,
     Blink,
     None,
 }
 
-impl Default for XMenuTriggerEffect {
+impl Default for XMenuItemTriggerEffect {
     fn default() -> Self {
-        XMenuTriggerEffect::Blink
+        XMenuItemTriggerEffect::Blink
     }
 }
 
@@ -89,6 +97,38 @@ pub enum XMenuItemMessage {
     RippleCreated(u8),
     RippleInAnimationFinished(u8),
     RippleOutAnimationFinished(u8),
+}
+
+impl XMenuItem {
+    fn start_ripple_out_animation(&mut self, link: yew::html::Scope<Self>, i: usize) {
+        if let Some(ripple) = self.ripples.get_mut(i) {
+            let element = ripple.node_ref.clone().cast::<Element>().unwrap();
+            let opacity = if let Some(computed_style) =
+                window().unwrap().get_computed_style(&element).unwrap()
+            {
+                computed_style
+                    .get_property_value("opacity")
+                    .unwrap_or(String::from("1"))
+            } else {
+                String::from("1")
+            };
+
+            ripple.out_animation = XMenuItemRippleAnimationStatus::Started;
+            let mut keyframes = HashMap::new();
+            keyframes.insert("opacity", [&opacity, "0"]);
+            let animation = new_animation(
+                &element,
+                &Object::try_from(&to_value(&keyframes).unwrap()).unwrap(),
+                300.0,
+                &crate::CSSEasing::CubicBezier(0.4, 0.0, 0.2, 1.0),
+            );
+
+            spawn_local(async move {
+                JsFuture::from(animation.finished().unwrap()).await.unwrap();
+                link.send_message(XMenuItemMessage::RippleOutAnimationFinished(i as u8));
+            });
+        }
+    }
 }
 
 impl Component for XMenuItem {
@@ -110,7 +150,6 @@ impl Component for XMenuItem {
             pointer_down: None,
             ripples: Vec::new(),
             prev_ripples_count: 0,
-            ripple_in_pending: false,
             pressed: false,
         }
     }
@@ -137,7 +176,15 @@ impl Component for XMenuItem {
 
                 // TODO: Check if a x-menuitem exist in closing menu
 
-                // TODO: If the closest menu-item is this
+                let closest_item = e.target().unwrap().dyn_into::<Element>().unwrap().closest(".x-menuitem").unwrap();
+                let root_element = self.root_ref.cast::<Element>().unwrap();
+                if let Some(closest_item) = closest_item {
+                    if closest_item != root_element {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
 
                 let root_element = self.root_ref.cast::<HtmlElement>().unwrap();
                 root_element.set_pointer_capture(e.pointer_id()).unwrap();
@@ -146,7 +193,7 @@ impl Component for XMenuItem {
 
                 // TODO: If do not have a XMenu as a child
                 match ctx.props().trigger_effect {
-                    XMenuTriggerEffect::Ripple => {
+                    XMenuItemTriggerEffect::Ripple => {
                         let ripples_element = self.ripples_ref.cast::<HtmlElement>().unwrap();
                         let bounding_box = ripples_element.get_bounding_client_rect();
                         let size = max(bounding_box.width(), bounding_box.height()) * 1.5;
@@ -157,6 +204,8 @@ impl Component for XMenuItem {
                             size,
                             top,
                             left,
+                            in_animation: XMenuItemRippleAnimationStatus::Created,
+                            out_animation: XMenuItemRippleAnimationStatus::Created,
                         });
                     }
                     _ => {}
@@ -165,6 +214,15 @@ impl Component for XMenuItem {
             XMenuItemMessage::PointerUp(_) => {
                 if let Some(pointer_down) = self.pointer_down.clone() {
                     self.pointer_down = None;
+
+                    let found_ripple = self.ripples.iter().position(|r| {
+                        r.in_animation == XMenuItemRippleAnimationStatus::Finished
+                            && r.out_animation == XMenuItemRippleAnimationStatus::Created
+                    });
+                    if let Some(in_ripple) = found_ripple {
+                        self.start_ripple_out_animation(ctx.link().clone(), in_ripple);
+                    }
+
                     let link = ctx.link().clone();
                     spawn_local(async move {
                         let pressed_time = Instant::now() - pointer_down.0;
@@ -191,14 +249,13 @@ impl Component for XMenuItem {
                     let ripple_element = ripple.node_ref.cast::<Element>().unwrap();
                     let mut keyframes = HashMap::new();
                     keyframes.insert("transform", ["scale3d(0, 0, 0)", "none"]);
-                    self.ripple_in_pending = true;
                     let animation = new_animation(
                         &ripple_element,
-                        &Object::try_from(&to_value(&keyframes).unwrap())
-                            .unwrap(),
+                        &Object::try_from(&to_value(&keyframes).unwrap()).unwrap(),
                         300.0,
                         &crate::CSSEasing::CubicBezier(0.4, 0.0, 0.2, 1.0),
                     );
+                    ripple.in_animation = XMenuItemRippleAnimationStatus::Started;
                     let link = ctx.link().clone();
                     spawn_local(async move {
                         JsFuture::from(animation.finished().unwrap()).await.unwrap();
@@ -206,7 +263,21 @@ impl Component for XMenuItem {
                     });
                 }
             }
-            _ => {}
+            XMenuItemMessage::RippleInAnimationFinished(i) => {
+                if let Some(ripple) = self.ripples.get_mut(i as usize) {
+                    ripple.in_animation = XMenuItemRippleAnimationStatus::Finished;
+                    if let None = self.pointer_down {
+                        self.start_ripple_out_animation(ctx.link().clone(), i as usize);
+                    }
+                }
+            },
+            XMenuItemMessage::RippleOutAnimationFinished(i) => {
+                self.ripples.remove(i as usize);
+
+                if self.ripples.len() == 0 {
+                    ctx.props().on_trigger_end.emit(());
+                }
+            }
         }
         true
     }

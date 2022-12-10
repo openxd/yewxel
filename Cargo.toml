@@ -78,6 +78,7 @@ element-x-menuitem = [
   "web-sys/OptionalEffectTiming",
   "web-sys/EffectTiming",
   "web-sys/Animation",
+  "web-sys/CssStyleDeclaration",
   "prokio",
   "wasm-bindgen-futures",
 ]
