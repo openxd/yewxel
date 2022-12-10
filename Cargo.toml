@@ -49,7 +49,7 @@ mode-dark = []
 mode-light = []
 # Supported Elements
 element-x-label = []
-element-x-message = ["regex","titlecase"]
+element-x-message = ["regex", "titlecase"]
 element-x-tooltip = [
   "web-sys/DomRect",
   "web-sys/AnimationEffect",
@@ -62,7 +62,25 @@ element-x-tooltip = [
 ]
 element-x-button = ["web-sys/MouseEvent", "web-sys/HtmlElement", "derive_more"]
 element-x-buttons = []
-element-x-menuitem = ["web-sys/MouseEvent", "web-sys/KeyboardEvent","web-sys/FocusEvent"]
+element-x-menuitem = [
+  "js-sys",
+  "serde-wasm-bindgen",
+  "web-sys/Animation",
+  "web-sys/Element",
+  "web-sys/DomRect",
+  "web-sys/HtmlElement",
+  "web-sys/MouseEvent",
+  "web-sys/KeyboardEvent",
+  "web-sys/FocusEvent",
+  "web-sys/PointerEvent",
+  "web-sys/AnimationEffect",
+  "web-sys/KeyframeEffect",
+  "web-sys/OptionalEffectTiming",
+  "web-sys/EffectTiming",
+  "web-sys/Animation",
+  "prokio",
+  "wasm-bindgen-futures",
+]
 element-x-menubar = []
 
 [workspace]

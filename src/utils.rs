@@ -3,7 +3,7 @@ pub(crate) fn console_log(message: String) {
 }
 
 // Animations
-#[cfg(all(feature = "element-x-tooltip", feature = "element-x-button"))]
+#[cfg(any(all(feature = "element-x-tooltip", feature = "element-x-button"), feature="element-x-menuitem"))]
 pub(crate) fn new_animation(
     target: &web_sys::Element,
     keyframes: &js_sys::Object,
