@@ -8,7 +8,7 @@ use std::{
 };
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{window, Element, FocusEvent, HtmlElement, MouseEvent, PointerEvent};
+use web_sys::{window, Element, FocusEvent, HtmlElement, KeyboardEvent, MouseEvent, PointerEvent};
 use yew::{html, Callback, Children, Component, ContextHandle, NodeRef, Properties};
 
 use crate::{
@@ -33,7 +33,7 @@ pub struct XMenuItemProps {
     pub children: Children,
     /// This callback is firing on the click event when component is togglable
     #[prop_or_default]
-    pub ontoggle: Option<Callback<MouseEvent>>,
+    pub ontoggle: Option<Callback<(MouseEvent, bool)>>,
     /// This callback is firing on the click event even when the component is togglable
     #[prop_or_default]
     pub onclick: Option<Callback<MouseEvent>>,
@@ -51,11 +51,17 @@ enum XMenuItemRippleAnimationStatus {
     Finished,
 }
 
+enum XMenuItemRippleClass {
+    Click,
+    PointerDown
+}
+
 struct XMenuItemRipple {
     node_ref: NodeRef,
     size: f64,
     top: f64,
     left: f64,
+    class: XMenuItemRippleClass,
     in_animation: XMenuItemRippleAnimationStatus,
     out_animation: XMenuItemRippleAnimationStatus,
 }
@@ -93,10 +99,12 @@ pub enum XMenuItemMessage {
     ContainerUpdated(XContainerContext),
     PointerDown(PointerEvent),
     PointerUp(PointerEvent),
+    Click(MouseEvent),
     ResetPressed,
     RippleCreated(u8),
     RippleInAnimationFinished(u8),
     RippleOutAnimationFinished(u8),
+    Blinking,
 }
 
 impl XMenuItem {
@@ -123,9 +131,9 @@ impl XMenuItem {
                 &crate::CSSEasing::CubicBezier(0.4, 0.0, 0.2, 1.0),
             );
 
-            spawn_local(async move {
+            link.send_future(async move {
                 JsFuture::from(animation.finished().unwrap()).await.unwrap();
-                link.send_message(XMenuItemMessage::RippleOutAnimationFinished(i as u8));
+                XMenuItemMessage::RippleOutAnimationFinished(i as u8)
             });
         }
     }
@@ -176,7 +184,13 @@ impl Component for XMenuItem {
 
                 // TODO: Check if a x-menuitem exist in closing menu
 
-                let closest_item = e.target().unwrap().dyn_into::<Element>().unwrap().closest(".x-menuitem").unwrap();
+                let closest_item = e
+                    .target()
+                    .unwrap()
+                    .dyn_into::<Element>()
+                    .unwrap()
+                    .closest(".x-menuitem")
+                    .unwrap();
                 let root_element = self.root_ref.cast::<Element>().unwrap();
                 if let Some(closest_item) = closest_item {
                     if closest_item != root_element {
@@ -206,6 +220,7 @@ impl Component for XMenuItem {
                             left,
                             in_animation: XMenuItemRippleAnimationStatus::Created,
                             out_animation: XMenuItemRippleAnimationStatus::Created,
+                            class: XMenuItemRippleClass::PointerDown,
                         });
                     }
                     _ => {}
@@ -223,8 +238,7 @@ impl Component for XMenuItem {
                         self.start_ripple_out_animation(ctx.link().clone(), in_ripple);
                     }
 
-                    let link = ctx.link().clone();
-                    spawn_local(async move {
+                    ctx.link().send_future(async move {
                         let pressed_time = Instant::now() - pointer_down.0;
                         let min_pressed_time = if pointer_down.1.pointer_type() == "touch" {
                             600
@@ -239,8 +253,8 @@ impl Component for XMenuItem {
                             .await;
                         }
 
-                        link.send_message(XMenuItemMessage::ResetPressed)
-                    })
+                        XMenuItemMessage::ResetPressed
+                    });
                 }
             }
             XMenuItemMessage::RippleCreated(i) => {
@@ -256,10 +270,9 @@ impl Component for XMenuItem {
                         &crate::CSSEasing::CubicBezier(0.4, 0.0, 0.2, 1.0),
                     );
                     ripple.in_animation = XMenuItemRippleAnimationStatus::Started;
-                    let link = ctx.link().clone();
-                    spawn_local(async move {
+                    ctx.link().send_future(async move {
                         JsFuture::from(animation.finished().unwrap()).await.unwrap();
-                        link.send_message(XMenuItemMessage::RippleInAnimationFinished(i));
+                        XMenuItemMessage::RippleInAnimationFinished(i)
                     });
                 }
             }
@@ -270,12 +283,124 @@ impl Component for XMenuItem {
                         self.start_ripple_out_animation(ctx.link().clone(), i as usize);
                     }
                 }
-            },
+            }
             XMenuItemMessage::RippleOutAnimationFinished(i) => {
                 self.ripples.remove(i as usize);
 
                 if self.ripples.len() == 0 {
                     ctx.props().on_trigger_end.emit(());
+                }
+            }
+            XMenuItemMessage::Click(e) => {
+                let event_target = e.target().map(|t| t.dyn_into::<Element>().unwrap());
+
+                if e.buttons() > 1 {
+                    return false;
+                }
+                if let Some(event_target) = event_target {
+                    let closest_item = event_target.closest(".x-menuitem").unwrap();
+                    if let Some(closest_item) = closest_item {
+                        if closest_item != event_target {
+                            return false;
+                        }
+                    }
+
+                    let closest_menu = event_target.closest(".x-menu").unwrap();
+                    if let Some(closest_menu) = closest_menu {
+                        let root_element = self.root_ref.cast::<Element>().unwrap();
+                        let root_element_closest_menu = root_element.closest(".x-menu").unwrap();
+                        if let Some(root_element_closest_menu) = root_element_closest_menu {
+                            if root_element_closest_menu != closest_menu {
+                                return false;
+                            }
+                        }
+                    }
+                }
+
+                // TODO: Check if a x-menuitem exist in closing menu
+
+                if ctx.props().togglable {
+                    if !e.default_prevented() {
+                        if let Some(ontoggle) = ctx.props().ontoggle.clone() {
+                            ontoggle.emit((e.clone(), !ctx.props().togglable));
+                        }
+                    }
+                }
+
+                // TODO: If do not have a XMenu as a child
+                match ctx.props().trigger_effect {
+                    XMenuItemTriggerEffect::Ripple => {
+                        let ripples_element = self.ripples_ref.cast::<HtmlElement>().unwrap();
+                        let bounding_box = ripples_element.get_bounding_client_rect();
+                        let size = max(bounding_box.width(), bounding_box.height()) * 1.5;
+                        let top = e.client_y() as f64 - bounding_box.y() - size / 2.0;
+                        let left = e.client_x() as f64 - bounding_box.x() - size / 2.0;
+                        self.ripples.push(XMenuItemRipple {
+                            node_ref: NodeRef::default(),
+                            size,
+                            top,
+                            left,
+                            in_animation: XMenuItemRippleAnimationStatus::Created,
+                            out_animation: XMenuItemRippleAnimationStatus::Created,
+                            class: XMenuItemRippleClass::Click,
+                        });
+                    }
+                    XMenuItemTriggerEffect::Blink => {
+                        if self.focused {
+                            let root_element = self.root_ref.cast::<Element>().unwrap();
+                            let parent_element = root_element.parent_element();
+                            if let Some(parent_element) = parent_element {
+                                let parent_element =
+                                    parent_element.dyn_into::<HtmlElement>().unwrap();
+                                parent_element.focus().unwrap();
+                                self.focused = false;
+                                ctx.link().send_future(async move {
+                                    sleep(Duration::from_millis(150)).await;
+                                    XMenuItemMessage::Blinking
+                                });
+                            }
+                        } else {
+                            let root_element = self.root_ref.cast::<HtmlElement>().unwrap();
+                            root_element.focus().unwrap();
+                            self.focused = true;
+                            ctx.link().send_future(async move {
+                                sleep(Duration::from_millis(150)).await;
+                                XMenuItemMessage::Blinking
+                            });
+                        }
+                    }
+                    XMenuItemTriggerEffect::None => {
+                        let callback = ctx.props().on_trigger_end.clone();
+                        spawn_local(async move {
+                            sleep(Duration::from_millis(50)).await;
+                            callback.emit(());
+                        });
+                    }
+                }
+            }
+            XMenuItemMessage::Blinking => {
+                if self.focused {
+                    let root_element = self.root_ref.cast::<Element>().unwrap();
+                    let parent_element = root_element.parent_element();
+                    if let Some(parent_element) = parent_element {
+                        let parent_element = parent_element.dyn_into::<HtmlElement>().unwrap();
+                        parent_element.focus().unwrap();
+                        self.focused = false;
+                        let callback = ctx.props().on_trigger_end.clone();
+                        spawn_local(async move {
+                            sleep(Duration::from_millis(150)).await;
+                            callback.emit(());
+                        });
+                    }
+                } else {
+                    let root_element = self.root_ref.cast::<HtmlElement>().unwrap();
+                    root_element.focus().unwrap();
+                    self.focused = true;
+                    let callback = ctx.props().on_trigger_end.clone();
+                    spawn_local(async move {
+                        sleep(Duration::from_millis(150)).await;
+                        callback.emit(())
+                    });
                 }
             }
         }
@@ -324,6 +449,17 @@ impl Component for XMenuItem {
         let onblur = ctx.link().callback(XMenuItemMessage::Blur);
         let onpointerup = ctx.link().callback(XMenuItemMessage::PointerUp);
         let onpointerdown = ctx.link().callback(XMenuItemMessage::PointerDown);
+        let onclick = ctx.link().callback(XMenuItemMessage::Click);
+        let onkeydown = Callback::from(move |e: KeyboardEvent| {
+            let code = e.code();
+            if code == "Enter" || code == "Space" {
+                e.prevent_default();
+                let event_target = e.target().map(|t| t.dyn_into::<HtmlElement>().unwrap());
+                if let Some(event_target) = event_target {
+                    event_target.click();
+                }
+            }
+        });
 
         html! {
           <div
@@ -332,12 +468,30 @@ impl Component for XMenuItem {
             {onfocus}
             {onpointerup}
             {onpointerdown}
+            {onclick}
+            {onkeydown}
             tabindex={if props.disabled {"-1"} else {"1"}}
             role="menuitem"
             ref={self.root_ref.clone()}
             class={classes.clone()}>
             <div ref={self.ripples_ref.clone()} class="ripples">
+                {self.ripples.iter().map(|ripple| {
+                    let class = if let XMenuItemRippleClass::Click = ripple.class {
+                       "ripple click-ripple" 
+                    } else {"ripple pointer-down-ripple"};
 
+                    let style = format!(
+                        "width: {}px; height: {}px; top: {}px; left: {}px",
+                        ripple.size as u64,
+                        ripple.size as u64,
+                        ripple.top as u64,
+                        ripple.left as u64);
+
+                    html! {
+                        <div {class} {style}>
+                        </div>
+                    }
+                }).collect::<yew::Html>()}
             </div>
             <svg class="checkmark" viewBox="0 0 100 100" preserveAspectRatio="none">
               <path></path>

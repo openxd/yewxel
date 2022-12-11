@@ -82,7 +82,7 @@ element-x-menuitem = [
   "prokio",
   "wasm-bindgen-futures",
 ]
-element-x-menubar = []
+element-x-menu = []
 
 [workspace]
 members = ["example", "."]

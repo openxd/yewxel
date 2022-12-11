@@ -11,6 +11,8 @@ pub mod xmessage;
 pub mod xmenuitem;
 #[cfg(feature="feature-intl")]
 mod intl;
+#[cfg(feature="element-x-menu")]
+pub mod xmenu;
 mod utils;
 
 /// Re-exported from `web_sys` crate.
