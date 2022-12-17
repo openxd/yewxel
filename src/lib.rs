@@ -69,6 +69,24 @@ impl ToString for XComponentSize {
     }
 }
 
+
+#[derive(PartialEq)]
+pub struct Transition {
+    property: String,
+    duration: f64,
+    easing: CSSEasing,
+}
+
+impl Transition {
+    pub fn new(property: &'static str, duration: f64, easing: CSSEasing) -> Self {
+        Self {
+            property: String::from(property),
+            duration,
+            easing,
+        }
+    }
+}
+
 #[derive(PartialEq)]
 pub enum CSSEasing {
     Linear,

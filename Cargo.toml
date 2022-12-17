@@ -59,6 +59,7 @@ element-x-tooltip = [
   "web-sys/Animation",
   "js-sys",
   "serde-wasm-bindgen",
+  "wasm-bindgen-futures"
 ]
 element-x-button = ["web-sys/MouseEvent", "web-sys/HtmlElement", "derive_more"]
 element-x-buttons = []
@@ -82,7 +83,9 @@ element-x-menuitem = [
   "prokio",
   "wasm-bindgen-futures",
 ]
-element-x-menu = []
+element-x-menu = [
+  "web-sys/Element"
+]
 
 [workspace]
 members = ["example", "."]

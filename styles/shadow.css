@@ -226,3 +226,43 @@ x-menuitem .arrow path {
   d: inherit;
   fill: currentColor;
 }
+
+/**************************************************************
+ * X Menu
+ **************************************************************/
+x-menu {
+  display: none;
+  top: 0;
+  left: 0;
+  width: fit-content;
+  padding: 4px 0;
+  z-index: 1001;
+  box-sizing: border-box;
+  background: white;
+  cursor: default;
+  overflow: auto;
+  flex-direction: column;
+  -webkit-app-region: no-drag;
+  --align: start;
+  --scrollbar-background: rgba(0, 0, 0, 0.2);
+  --scrollbar-width: 6px;
+  --open-transition: 100 transform cubic-bezier(0.4, 0, 0.2, 1);
+  --close-transition: 200 opacity cubic-bezier(0.4, 0, 0.2, 1);
+}
+x-menu[opened],
+x-menu[animating] {
+  display: flex;
+}
+x-menu:focus {
+  outline: none;
+}
+x-menu ::-webkit-scrollbar {
+  max-width: var(--scrollbar-width);
+  background: none;
+}
+x-menu ::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-background);
+}
+x-menu ::-webkit-scrollbar-corner {
+  display: none
+}

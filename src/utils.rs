@@ -21,6 +21,7 @@ pub(crate) fn new_animation(
     animation_effect.update_timing_with_timing(&timing).unwrap();
 
     let animation = web_sys::Animation::new_with_effect(Some(&animation_effect)).unwrap();
+    animation.play().unwrap();
     animation
 }
 

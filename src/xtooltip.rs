@@ -31,7 +31,7 @@
 use std::fmt::Write;
 use yew::{html, Children, Component, NodeRef, Properties};
 
-use crate::CSSEasing;
+use crate::{CSSEasing, Transition};
 
 #[cfg(feature = "element-x-button")]
 const WINDOW_WHITESPACE: f64 = 8.0;
@@ -86,21 +86,6 @@ impl ToString for XTooltipAlign {
     }
 }
 
-#[derive(PartialEq)]
-pub struct XTooltipAnimation {
-    duration: f64,
-    easing: CSSEasing,
-}
-
-impl Default for XTooltipAnimation {
-    fn default() -> Self {
-        XTooltipAnimation {
-            duration: 4.0,
-            easing: CSSEasing::CubicBezier(0.4, 0.0, 0.2, 1.0),
-        }
-    }
-}
-
 /// Properties to XTooltip component.
 ///
 /// > NOTE: If you are using the XTooltip without `"element-x-button"` feature, it is mandatory
@@ -144,11 +129,11 @@ pub struct XTooltipProps {
     #[prop_or_default]
     pub class: Option<String>,
     /// Animation to use when opening the tooltip
-    #[prop_or_default]
-    pub open_transition: XTooltipAnimation,
+    #[prop_or(Transition::new("property", 0.0, CSSEasing::CubicBezier(0.4, 0.0, 0.2, 1.0)))]
+    pub open_transition: Transition,
     /// Animation to use when closing the tooltip
-    #[prop_or_default]
-    pub close_transition: XTooltipAnimation,
+    #[prop_or(Transition::new("property", 0.0, CSSEasing::CubicBezier(0.4, 0.0, 0.2, 1.0)))]
+    pub close_transition: Transition,
 }
 
 #[doc(hidden)]
@@ -205,10 +190,10 @@ impl Component for XTooltip {
     #[cfg(feature = "element-x-button")]
     fn update(&mut self, ctx: &yew::Context<Self>, msg: Self::Message) -> bool {
         use std::collections::HashMap;
+        use wasm_bindgen_futures::JsFuture;
         use yew::TargetCast;
 
         use js_sys::Object;
-        use wasm_bindgen::{prelude::Closure, JsCast};
         use web_sys::{window, Element};
 
         use crate::xbutton::XButtonEvent;
@@ -221,25 +206,27 @@ impl Component for XTooltip {
                 if let Some(event) = &message.event {
                     match event {
                         XButtonEvent::MouseEnter(e) => {
-                            let current_element = self.node_ref.cast::<web_sys::HtmlElement>().unwrap();
+                            let current_element =
+                                self.node_ref.cast::<web_sys::HtmlElement>().unwrap();
                             if !self.open {
                                 let props = ctx.props();
                                 if props.on_open.is_some() {
                                     props.on_open.clone().unwrap().emit(());
                                 }
 
-                                let mut keyframes = HashMap::new();
-                                keyframes.insert("opacity", ["0","1"]);
-                                let animate = crate::utils::new_animation(
-                                    &current_element,
-                                    &Object::try_from(
-                                        &serde_wasm_bindgen::to_value(&keyframes).unwrap(),
-                                    )
-                                    .unwrap(),
-                                    props.close_transition.duration,
-                                    &props.close_transition.easing,
-                                );
-                                animate.play().unwrap();
+                                if props.close_transition.property == "opacity" {
+                                    let mut keyframes = HashMap::new();
+                                    keyframes.insert("opacity", ["0", "1"]);
+                                    crate::utils::new_animation(
+                                        &current_element,
+                                        &Object::try_from(
+                                            &serde_wasm_bindgen::to_value(&keyframes).unwrap(),
+                                        )
+                                        .unwrap(),
+                                        props.close_transition.duration,
+                                        &props.close_transition.easing,
+                                    );
+                                }
                             }
                             self.open = true;
                             if self.position.is_none() {
@@ -284,31 +271,26 @@ impl Component for XTooltip {
                                 if props.on_close.is_some() {
                                     props.on_close.clone().unwrap().emit(());
                                 }
-                                let current_element = self.node_ref.cast::<Element>().unwrap();
-                                let mut keyframes = HashMap::new();
-                                keyframes.insert("opacity", ["1", "0"]);
-                                let animate = crate::utils::new_animation(
-                                    &current_element,
-                                    &Object::try_from(
-                                        &serde_wasm_bindgen::to_value(&keyframes).unwrap(),
-                                    )
-                                    .unwrap(),
-                                    props.close_transition.duration,
-                                    &props.close_transition.easing,
-                                );
 
-                                let onfinish = {
-                                    let link = ctx.link().clone();
-                                    Closure::wrap(Box::new(move || {
-                                        link.send_message(
-                                            XTooltipMessage::XButtonCloseAnimationEnd,
-                                        );
-                                    })
-                                        as Box<dyn FnMut()>)
-                                };
-                                animate.set_onfinish(Some(onfinish.as_ref().unchecked_ref()));
-                                onfinish.forget();
-                                animate.play().unwrap();
+                                if props.close_transition.property == "opacity" {
+                                    let current_element = self.node_ref.cast::<Element>().unwrap();
+                                    let mut keyframes = HashMap::new();
+                                    keyframes.insert("opacity", ["1", "0"]);
+                                    let animate = crate::utils::new_animation(
+                                        &current_element,
+                                        &Object::try_from(
+                                            &serde_wasm_bindgen::to_value(&keyframes).unwrap(),
+                                        )
+                                        .unwrap(),
+                                        props.close_transition.duration,
+                                        &props.close_transition.easing,
+                                    );
+
+                                    ctx.link().send_future(async move {
+                                        JsFuture::from(animate.finished().unwrap()).await.unwrap();
+                                        XTooltipMessage::XButtonCloseAnimationEnd
+                                    });
+                                }
                             }
                             true
                         }
@@ -318,7 +300,7 @@ impl Component for XTooltip {
                     false
                 }
             }
-            XTooltipMessage::XButtonCloseAnimationEnd=> {
+            XTooltipMessage::XButtonCloseAnimationEnd => {
                 self.open = false;
                 true
             }
